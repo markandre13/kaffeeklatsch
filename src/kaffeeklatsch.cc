@@ -121,16 +121,34 @@ void ExampleGroup::evaluate(Statistics* statistics) {
         if (m_has_focus_child && !(item->m_has_focus_child || item->m_focus)) {
             continue;
         }
-        for (auto& call : beforeEach) {
-            call();
-        }
         item->evaluate(statistics);
-        for (auto& call : afterEach) {
-            call();
-        }
     }
     for (auto& call : afterAll) {
         call();
+    }
+}
+
+void Example::evaluateBeforeEach(ExampleGroup *group) {
+    if (!group) {
+        return;
+    }
+    if (group->parent) {
+        evaluateBeforeEach(group->parent);
+    }
+    for (auto& call : group->beforeEach) {
+        call();
+    }
+}
+
+void Example::evaluateAfterEach(ExampleGroup *group) {
+    if (!group) {
+        return;
+    }
+    for (auto& call : group->afterEach) {
+        call();
+    }
+    if (group->parent) {
+        evaluateAfterEach(group->parent);
     }
 }
 
@@ -140,7 +158,9 @@ void Example::evaluate(Statistics* statistics) {
         if (m_skip) {
             skipped = true;
         } else {
+            evaluateBeforeEach(parent);
             body();
+            evaluateAfterEach(parent);
         }
     } catch (assertion_error const& ex) {
         passed = false;
@@ -202,10 +222,11 @@ void Example::reportFailures(const std::string& path) {
     }
 }
 
+// this one is for testing purposes
 void tmp_spec(std::function<void()> body, std::function<void(const Statistics&)> verify) {
     auto previousSuite = currentSuite;
     // std::println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-    detail::ExampleGroup root("", [] {});
+    detail::ExampleGroup root(nullptr, "", [] {});
     detail::currentSuite = &root;
     body();
     Statistics statistics;
@@ -228,7 +249,7 @@ void tmp_spec(std::function<void()> body, std::function<void(const Statistics&)>
 
 int run(int, char*[]) {
     std::println("{}TEST RUN:\n\n{}START:{}\n", colour::boldWhite, colour::underline, colour::reset);
-    detail::ExampleGroup root("", [] {});
+    detail::ExampleGroup root(nullptr, "", [] {});
     detail::currentSuite = &root;
     for (auto& suite : detail::specs()) {
         suite();
@@ -241,7 +262,7 @@ int run(int, char*[]) {
 
 detail::ExampleGroup& describe(const std::string& groupname, std::function<void()> body) {
     auto parentSuite = detail::currentSuite;
-    auto group = std::make_unique<detail::ExampleGroup>(groupname, body);
+    auto group = std::make_unique<detail::ExampleGroup>(parentSuite, groupname, body);
     detail::ExampleGroup* ptr = group.get();
     detail::currentSuite = ptr;
     parentSuite->items.push_back(std::move(group));
@@ -256,7 +277,7 @@ detail::ExampleGroup& describe(const std::string& groupname) { return xdescribe(
 
 detail::Example& it(const std::string& examplename, std::function<void()> body) {
     auto parentSuite = detail::currentSuite;
-    auto example = std::make_unique<detail::Example>(examplename, body);
+    auto example = std::make_unique<detail::Example>(parentSuite, examplename, body);
     detail::Example* ptr = example.get();
     parentSuite->items.push_back(std::move(example));
     return *ptr;

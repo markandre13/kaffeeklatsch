@@ -343,8 +343,11 @@ struct Statistics {
         std::chrono::nanoseconds totalDuration = 0ns;
 };
 
+
+struct ExampleGroup;
+
 struct Item {
-        Item(const std::string name, std::function<void()> body) : name(name), body(body) {}
+        Item(ExampleGroup *parent, const std::string name, std::function<void()> body) : parent(parent), name(name), body(body) {}
         virtual ~Item();
 
         virtual void scan() = 0;
@@ -352,6 +355,7 @@ struct Item {
         virtual void report(const std::string& indent) = 0;
         virtual void reportFailures(const std::string& path) = 0;
 
+        ExampleGroup *parent;
         std::string name;
         std::function<void()> body;
         bool m_focus = false;
@@ -361,7 +365,7 @@ struct Item {
 };
 
 struct Example : Item {
-        Example(const std::string name, std::function<void()> body) : Item(name, body) {}
+        Example(ExampleGroup *parent, const std::string name, std::function<void()> body) : Item(parent, name, body) {}
         Example& only() {
             m_focus = true;
             return *this;
@@ -380,10 +384,13 @@ struct Example : Item {
         bool skipped = false;
         std::chrono::nanoseconds duration;
         assertion_error error;
+    protected:
+        static void evaluateBeforeEach(ExampleGroup *group);
+        static void evaluateAfterEach(ExampleGroup *group);
 };
 
 struct ExampleGroup : Item {
-        ExampleGroup(const std::string name, std::function<void()> body) : Item(name, body) {}
+        ExampleGroup(ExampleGroup *parent, const std::string name, std::function<void()> body) : Item(parent, name, body) {}
         ExampleGroup& only() {
             m_focus = true;
             return *this;

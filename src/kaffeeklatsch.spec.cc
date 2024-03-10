@@ -1,8 +1,7 @@
-import std;
-using namespace std;
-
 #include "kaffeeklatsch.hh"
 using namespace kaffeeklatsch;
+
+using namespace std;
 
 // TODO
 // [ ] add test for .undefined()
@@ -145,25 +144,140 @@ kaffeeklatsch_spec([] {
                     });
             });
             // TODO: mix skip & focus
-            it("beforeAll(<body>), beforeEach(<body>), afterEach(<body>), afterAll(<body>)", [] {
-                vector<const char *> log;
-                detail::tmp_spec(
-                    [&] {
-                        beforeAll([&] { log.push_back("beforeAll"); });
-                        beforeEach([&] { log.push_back("beforeEach"); });
-                        afterEach([&] { log.push_back("afterEach"); });
-                        afterAll([&] { log.push_back("afterAll"); });
+            describe("beforeAll(<body>), beforeEach(<body>), afterEach(<body>), afterAll(<body>)", [] {
+                it("run (before|after)All once before and after all, and (before|after)Each before and after each it()", [] {
+                    vector<const char *> log;
+                    detail::tmp_spec(
+                        [&] {
+                            beforeAll([&] { log.push_back("beforeAll"); });
+                            beforeEach([&] { log.push_back("beforeEach"); });
+                            afterEach([&] { log.push_back("afterEach"); });
+                            afterAll([&] { log.push_back("afterAll"); });
 
-                        it("test0.0", [&] { log.push_back("0"); });
-                        it("test0.1", [&] { log.push_back("1"); });
-                        it("test0.2", [&] { log.push_back("2"); });
-                    },
-                    [&](const detail::Statistics &statistics) {
-                        expect(statistics.numTotalTestSuites).to.equal(0);
-                        expect(statistics.numTotalTests).to.equal(3);
-                        expect(log).to.equal(
-                            vector{"beforeAll", "beforeEach", "0", "afterEach", "beforeEach", "1", "afterEach", "beforeEach", "2", "afterEach", "afterAll"});
-                    });
+                            it("test0.0", [&] { log.push_back("0"); });
+                            it("test0.1", [&] { log.push_back("1"); });
+                            it("test0.2", [&] { log.push_back("2"); });
+                        },
+                        [&](const detail::Statistics &statistics) {
+                            expect(statistics.numTotalTestSuites).to.equal(0);
+                            expect(statistics.numTotalTests).to.equal(3);
+                            expect(log).to.equal(
+                                vector{
+                                    "beforeAll", 
+                                    "beforeEach", 
+                                    "0", 
+                                    "afterEach", 
+                                    "beforeEach", 
+                                    "1", 
+                                    "afterEach", 
+                                    "beforeEach", 
+                                    "2", 
+                                    "afterEach", 
+                                    "afterAll"
+                                });
+                        });
+                });
+                it("run beforeEach() and afterEach() before/after each it()", [] {
+                        vector<const char *> log;
+                        detail::tmp_spec(
+                            [&] {
+                                beforeAll([&] { log.push_back("1 beforeAll"); });
+                                beforeEach([&] { log.push_back("1 beforeEach"); });
+                                describe("1.1", [&] {
+                                    beforeAll([&] { log.push_back("1.1 beforeAll"); });
+                                    beforeEach([&] { log.push_back("1.1 beforeEach"); });
+                                    it("1.1.1", [&] { log.push_back("1.1.1 it"); });
+                                    it("1.1.2", [&] { log.push_back("1.1.2 it"); });
+                                    afterEach([&] { log.push_back("1.1 afterEach"); });
+                                    afterAll([&] { log.push_back("1.1 afterAll"); });
+                                });
+                                afterEach([&] { log.push_back("1 afterEach"); });
+                                afterAll([&] { log.push_back("1 afterAll"); });
+                            },
+                            [&](const detail::Statistics &statistics) {
+                                expect(statistics.numTotalTestSuites).to.equal(1);
+                                expect(statistics.numTotalTests).to.equal(2);
+                                auto e =
+                                    vector{
+                                        "1 beforeAll",
+                                        "1.1 beforeAll",
+                                        "1 beforeEach",
+                                        "1.1 beforeEach",
+                                        "1.1.1 it",
+                                        "1.1 afterEach",
+                                        "1 afterEach",
+                                        "1 beforeEach",
+                                        "1.1 beforeEach",
+                                        "1.1.2 it",
+                                        "1.1 afterEach",
+                                        "1 afterEach",
+                                        "1.1 afterAll",
+                                        "1 afterAll"
+                                    };
+                                // for(size_t i=0; i<log.size() && i<e.size(); ++i) {
+                                //     if(log[i] == e[i]) {
+                                //         println("[{}] {} == {}", i, log[i], e[i]);
+                                //     } else {
+                                //         println("[{}] {} != {}", i, log[i], e[i]);
+                                //     }
+                                // }
+                                expect(log).to.equal(e);
+                            });                
+                });
+                it("errors in beforeEach() are part of it()", [] {
+                        vector<const char *> log;
+                        detail::tmp_spec(
+                            [&] {
+                                beforeEach([&]{
+                                    log.push_back("beforeEach");
+                                    expect(2001).to.equal(2012);
+                                });
+                                it("it", [&]{
+                                    log.push_back("it");
+                                });
+                                afterEach([&]{
+                                    log.push_back("afterEach");
+                                });
+                            },
+                            [&](const detail::Statistics &statistics) {
+                                expect(statistics.numFailedTests).to.equal(1);
+                                expect(statistics.numTotalTestSuites).to.equal(0);
+                                expect(statistics.numTotalTests).to.equal(1);
+                                auto e =
+                                    vector{
+                                        "beforeEach",
+                                    };
+                                expect(log).to.equal(e);
+                            });                
+                });
+                it("errors in afterEach() are part of it()", [] {
+                        vector<const char *> log;
+                        detail::tmp_spec(
+                            [&] {
+                                beforeEach([&]{
+                                    log.push_back("beforeEach");
+                                });
+                                it("it", [&]{
+                                    log.push_back("it");
+                                });
+                                afterEach([&]{
+                                    log.push_back("afterEach");
+                                    expect(2001).to.equal(2012);
+                                });
+                            },
+                            [&](const detail::Statistics &statistics) {
+                                expect(statistics.numFailedTests).to.equal(1);
+                                expect(statistics.numTotalTestSuites).to.equal(0);
+                                expect(statistics.numTotalTests).to.equal(1);
+                                auto e =
+                                    vector{
+                                        "beforeEach",
+                                        "it",
+                                        "afterEach"
+                                    };
+                                expect(log).to.equal(e);
+                            });                
+                });
             });
         });
     });
