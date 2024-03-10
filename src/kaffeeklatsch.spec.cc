@@ -427,7 +427,41 @@ kaffeeklatsch_spec([] {
                 }).to.throw_(assertion_error("expected 8 to be undefined", "", 0));
             });
         });
-
+        describe(".match(...)", []{
+            describe("match(std::string)", []{
+                it("okay", []{
+                    expect("hello").to.match("^hello$");
+                });
+                it("error", [] {
+                    expect([] {
+                        // prettier-ignore
+                        expect("hello").to.match("^HELLO$");
+                    }).to.throw_(assertion_error("expected \"hello\" to match /^HELLO$/", "", 0));
+                });
+            });
+            describe("match(std::regex)", []{
+                it("okay", []{
+                    expect("hello").to.match(std::regex("^hello$"));
+                });
+                it("error", [] {
+                    expect([] {
+                        // prettier-ignore
+                        expect("hello").to.match(std::regex("^HELLO$"));
+                    }).to.throw_(assertion_error("expected \"hello\" to match regex", "", 0));
+                });
+            });
+            describe("uuid()", []{
+                it("okay", []{
+                    expect("123e4567-e89b-12d3-a456-426655440000").to.be.uuid();
+                });
+                it("error", [] {
+                    expect([] {
+                        // prettier-ignore
+                        expect("hello").to.be.uuid();
+                    }).to.throw_(assertion_error("expected \"hello\" to be a UUID", "", 0));
+                });
+            });
+        });
         describe("container", [] {
             describe(".sizeOf(<expected>)", [] {
                 it(".sizeOf(...)", [] {

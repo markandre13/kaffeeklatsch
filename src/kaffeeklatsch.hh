@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <regex>
 
 namespace kaffeeklatsch {
 
@@ -178,7 +179,7 @@ class Assertion {
         Assertion& lte(auto value) {
             if (m_negate) {
                 if (m_value <= value) {
-                    throw assertion_error(std::format("expected {} to be less than or equal {}", to_str(m_value), to_str(value)), filename, line);
+                    throw assertion_error(std::format("expected {} to not be less than or equal {}", to_str(m_value), to_str(value)), filename, line);
                 }
             } else {
                 if (!(m_value <= value)) {
@@ -198,11 +199,59 @@ class Assertion {
         Assertion& within(A min, A max) {
             if (m_negate) {
                 if (min <= m_value && m_value <= max) {
-                    throw assertion_error(std::format("expected {} to be within {}..{}", to_str(m_value), to_str(min), to_str(max)), filename, line);
+                    throw assertion_error(std::format("expected {} to not be within {}..{}", to_str(m_value), to_str(min), to_str(max)), filename, line);
                 }
             } else {
                 if (!(min <= m_value && m_value <= max)) {
                     throw assertion_error(std::format("expected {} to be within {}..{}", to_str(m_value), to_str(min), to_str(max)), filename, line);
+                }
+            }
+            m_negate = false;
+            return *this;
+        }
+
+        //
+        // regex
+        //
+        Assertion& match(std::regex re) {
+            std::cmatch m;
+            if (m_negate) {
+                if (std::regex_match(m_value, m, re)) {
+                    throw assertion_error(std::format("expected {} to not match regex", to_str(m_value)), filename, line);
+                }
+            } else {
+                if (!std::regex_match(m_value, m, re)) {
+                    throw assertion_error(std::format("expected {} to match regex", to_str(m_value)), filename, line);
+                }
+            }
+            m_negate = false;
+            return *this;
+        }
+        Assertion& match(std::string pattern) {
+            std::regex re(pattern);
+            std::cmatch m;
+            if (m_negate) {
+                if (std::regex_match(m_value, m, re)) {
+                    throw assertion_error(std::format("expected {} to not match /{}/", to_str(m_value), pattern), filename, line);
+                }
+            } else {
+                if (!std::regex_match(m_value, m, re)) {
+                    throw assertion_error(std::format("expected {} to match /{}/", to_str(m_value), pattern), filename, line);
+                }
+            }
+            m_negate = false;
+            return *this;
+        }
+        Assertion& uuid() {
+            std::regex re("^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$");
+            std::cmatch m;
+            if (m_negate) {
+                if (std::regex_match(m_value, m, re)) {
+                    throw assertion_error(std::format("expected {} to not be a UUID", to_str(m_value)), filename, line);
+                }
+            } else {
+                if (!std::regex_match(m_value, m, re)) {
+                    throw assertion_error(std::format("expected {} to be a UUID", to_str(m_value)), filename, line);
                 }
             }
             m_negate = false;
