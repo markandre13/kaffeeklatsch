@@ -3,6 +3,7 @@
 // kaffeeklatsch: a c++ mocha/chai variant or rspec
 // https://stevenrbaker.com/tech/history-of-rspec.html
 
+#include <typeinfo>
 #include <chrono>
 #include <cstring>
 #include <exception>
