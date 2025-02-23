@@ -425,10 +425,10 @@ struct Example : Item {
             return *this;
         }
         // protected:
-        void scan();
-        void evaluate(Statistics* statistics);
-        void report(const std::string& indent);
-        void reportFailures(const std::string& path);
+        void scan() override;
+        void evaluate(Statistics* statistics) override;
+        void report(const std::string& indent) override;
+        void reportFailures(const std::string& path) override;
 
         bool passed = true;
         bool skipped = false;
@@ -450,10 +450,10 @@ struct ExampleGroup : Item {
             return *this;
         }
         // protected
-        void scan();
-        void evaluate(Statistics* statistics);
-        void report(const std::string& indent);
-        void reportFailures(const std::string& path);
+        void scan() override;
+        void evaluate(Statistics* statistics) override;
+        void report(const std::string& indent) override;
+        void reportFailures(const std::string& path) override;
         std::vector<std::unique_ptr<Item>> items;
         std::vector<std::function<void()>> beforeAll;
         std::vector<std::function<void()>> beforeEach;

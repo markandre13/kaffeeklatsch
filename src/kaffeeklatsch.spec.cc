@@ -1,6 +1,8 @@
 #include "kaffeeklatsch.hh"
 using namespace kaffeeklatsch;
 
+#include <unistd.h>
+
 using namespace std;
 
 // TODO

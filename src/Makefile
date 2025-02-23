@@ -4,7 +4,13 @@ MEM=-fsanitize=address -fsanitize=leak -g
 
 CXX=/usr/local/opt/llvm/bin/clang++
 CFLAGS=-std=c++23 $(MEM) -O0 -g \
-	-Wall -Wextra -Wno-deprecated-anon-enum-enum-conversion \
+	-Wall \
+	-Wextra \
+	-Wno-deprecated-anon-enum-enum-conversion \
+	-Werror=return-type \
+	-Werror=shadow \
+	-Werror=suggest-override \
+	-Wno-unused-parameter \
 	-I/usr/local/opt/llvm/include/c++
 
 LDFLAGS=-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++ \
